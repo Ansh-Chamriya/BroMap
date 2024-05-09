@@ -17,7 +17,11 @@
 		<a href="/map"><Button class=" m-10 mt-8 h-12 w-64 text-xl">Get Started</Button></a>
 	</div>
 	<div class="m-auto mr-4 w-fit">
-		<img src="src\lib\homeImg.jpg" alt="" class=" size-[26rem] rounded-2xl" />
+		<img
+			src="https://raw.githubusercontent.com/Ansh-Chamriya/BroMap/master/src/lib/homeImg.jpg"
+			alt=""
+			class=" size-[26rem] rounded-2xl"
+		/>
 	</div>
 </div>
 
