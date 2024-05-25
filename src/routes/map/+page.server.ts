@@ -1,43 +1,44 @@
 import type { PageLoad } from './$types';
-// src/routes/query-params/+page.server.ts
 
 export const load: PageLoad = async ({ url }) => {
-	const data = await fetch(
-		'https://raw.githubusercontent.com/Ansh-Chamriya/NIRBHIC/master/static/new.geojson'
-	);
-	const pincodeData = await data.json();
+	let lat = url.searchParams.get('lat') || 21.171814;
+	let lon = url.searchParams.get('lon') || 72.817699;
+	// console.log(lat, lon);
+	// let lat = 21.171814;
+	// let lon = 72.817699;
 
 	const response = await fetch(
 		'https://us-central1-womensafety-422010.cloudfunctions.net/predict',
 		{
 			method: 'POST',
 			body: JSON.stringify({
-				latitude: 22.7041,
-				longitude: 73.1025
+				latitude: lat,
+				longitude: lon
 			})
 		}
 	);
-	let lat = url.searchParams.get('lat');
-	let lon = url.searchParams.get('lon');
-	// let lat = 21.171814;
-	// let lon = 72.817699;
-	// const resp = await fetch(
-	// 	`https://raspy-pine-ba1e.anshchamariya922.workers.dev/?lat=${lat}&lon=${lon}`
-	// );
-	let swappedCoordinates = [];
-	const resp = await fetch(
-		`https://raspy-pine-ba1e.anshchamariya922.workers.dev/?lat=${lat}&lon=${lon}`
-	);
-	const coordinates = await resp.json();
-	for (let i = 0; i < coordinates.response[0].length; i++) {
-		swappedCoordinates = coordinates.response[0].map(([lat, lon]) => [lon, lat]);
-	}
-
 	const predictedData = await response.json();
+	let swappedCoordinates = [];
+	const resp = await fetch(`https://nirbhicapi.netlify.app/?lat=${lat}&lon=${lon}`);
+
+	const coordinates = await resp.json();
+	if (!coordinates) {
+		return {
+			stateData: [],
+			coordata: [],
+			predictedData: []
+		};
+	}
+	const { currentArea, currentState } = coordinates;
+	for (let i = 0; i < currentArea[0].length; i++) {
+		swappedCoordinates = currentArea[0].map(([lat, lon]) => [lon, lat]);
+	}
+	console.log(currentArea);
+
 	console.log(predictedData);
 
 	return {
-		pincodeData: pincodeData,
+		stateData: currentState,
 		coordata: [swappedCoordinates],
 		predictedData: predictedData
 	};

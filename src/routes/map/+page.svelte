@@ -1,12 +1,11 @@
 <script lang="ts">
 	export let data;
 	import L from 'leaflet';
-	import 'leaflet/dist/leaflet.css';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { LocateFixed } from 'lucide-svelte';
-	const pincodeData = data.pincodeData;
+	const stateData = data.stateData;
 	const coordinates = data.coordata;
 	const safeScore = data.predictedData['Safe/Unsafe'];
 	let polygonColour = '#e08cf5';
@@ -41,42 +40,53 @@
 		lat = parseFloat($page.url.searchParams.get('lat'));
 		lon = parseFloat($page.url.searchParams.get('lon'));
 	}
-	const styles = ['jawg-streets', 'jawg-sunny', 'jawg-terrain', 'jawg-dark', 'jawg-light'];
+	const styles = ['googleStreets', 'googleHybrid', 'googleSat', 'googleTerrain'];
 	let mymap;
 	let latlng = [20.5937, 78.9629];
-	const mycustomLayer = {};
+	const mycustomLayer = {
+		googleStreets: L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+			maxZoom: 20,
+			subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+		}),
+		googleHybrid: L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+			maxZoom: 20,
+			subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+		}),
+		googleSat: L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+			maxZoom: 20,
+			subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+		}),
+		googleTerrain: L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+			maxZoom: 20,
+			subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+		}),
+		openStreetMap: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		})
+	};
 
 	onMount(() => {
-		mymap = L.map('mymaps').setView(latlng, 5);
+		mymap = L.map('mymaps').setView(latlng, 3);
 		// 3 IS ZOOM
 
 		// CREATE TILE LAYER
-		styles.forEach((style) => {
-			mycustomLayer[style] = L.tileLayer(
-				`https://tile.jawg.io/${style}/{z}/{x}/{y}{r}.png?access-token=${accessToken}`,
-				{
-					maxZoom: 22
-				}
-			);
-		});
 
 		// SET DEFAULT IF OPEN THE MAPS FIRST
-		mycustomLayer['jawg-streets'].addTo(mymap);
-
+		mycustomLayer['googleStreets'].addTo(mymap);
+		mymap.invalidateSize();
 		// ADD CONTROLL IN TOP RIGHT FOR SWITCH THEME MAPS
 		L.control.layers(mycustomLayer).addTo(mymap);
 
-		L.geoJson(pincodeData, {
-			onEachFeature: function (feature, layer) {
-				layer.bindPopup(feature.properties.Area);
-			}
-		}).addTo(mymap);
-		let polygon = L.polygon(coordinates[0], { color: polygonColour }).addTo(mymap);
-		mymap.fitBounds(polygon.getBounds());
-		// mymap.on('click', function (e) {
-		// 	console.log(e.latlng);
-		// 	let marker = L.marker(e.latlng.lat, e.latlng.lng).addTo(mymap);
-		// });
+		// L.polygon(stateData, {
+		// 	onEachFeature: function (feature, layer) {
+		// 		layer.bindPopup(feature.properties.Area);
+		// 	}
+		// }).addTo(mymap);
+
+		// let polygon = L.polygon(coordinates[0], { color: polygonColour }).addTo(mymap);
+		// mymap.fitBounds(polygon.getBounds());
 	});
 	function getCurrentLocation() {
 		navigator.geolocation.getCurrentPosition(
@@ -104,7 +114,8 @@
 	}
 </script>
 
-<div id="mymaps" class="h-[702px] w-[1535px]"></div>
+<!-- h-[702px] w-[1535px] -->
+<div id="mymaps" class="h-[702px] w-[1535px] scale-125"></div>
 <button class="absolute bottom-10 right-10 z-[500] w-fit" on:click={getCurrentLocation}>
 	<LocateFixed size="48px" />
 </button>

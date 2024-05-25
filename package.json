@@ -32,6 +32,7 @@
 		"bits-ui": "^0.21.7",
 		"clsx": "^2.1.1",
 		"leaflet": "^1.9.4",
+		"leaflet.glify": "^2.1.2",
 		"lucide-svelte": "^0.378.0",
 		"tailwind-merge": "^2.3.0",
 		"tailwind-variants": "^0.2.1"
