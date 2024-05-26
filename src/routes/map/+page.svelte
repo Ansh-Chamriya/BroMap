@@ -5,9 +5,14 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { LocateFixed } from 'lucide-svelte';
+	import 'leaflet/dist/leaflet.css';
 	const stateData = data.stateData;
 	const coordinates = data.coordata;
 	const safeScore = data.predictedData['Safe/Unsafe'];
+	console.log(stateData);
+	console.log(coordinates);
+
+	let mapCon;
 	let polygonColour = '#e08cf5';
 	if (safeScore == 1) {
 		polygonColour = '##fc0000';
@@ -43,6 +48,8 @@
 	const styles = ['googleStreets', 'googleHybrid', 'googleSat', 'googleTerrain'];
 	let mymap;
 	let latlng = [20.5937, 78.9629];
+	// const styles = ['jawg-streets', 'jawg-sunny', 'jawg-terrain', 'jawg-dark', 'jawg-light'];
+
 	const mycustomLayer = {
 		googleStreets: L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
 			maxZoom: 20,
@@ -68,25 +75,38 @@
 	};
 
 	onMount(() => {
-		mymap = L.map('mymaps').setView(latlng, 3);
+		mymap = L.map(mapCon).setView(latlng, 13);
 		// 3 IS ZOOM
 
 		// CREATE TILE LAYER
 
 		// SET DEFAULT IF OPEN THE MAPS FIRST
+		// mymap.invalidateSize();
+		// // ADD CONTROLL IN TOP RIGHT FOR SWITCH THEME MAPS
+		// styles.forEach((style) => {
+		// 	mycustomLayer[style] = L.tileLayer(
+		// 		`https://tile.jawg.io/${style}/{z}/{x}/{y}{r}.png?access-token=${accessToken}`,
+		// 		{
+		// 			maxZoom: 22
+		// 		}
+		// 	);
+		// });
 		mycustomLayer['googleStreets'].addTo(mymap);
-		mymap.invalidateSize();
-		// ADD CONTROLL IN TOP RIGHT FOR SWITCH THEME MAPS
 		L.control.layers(mycustomLayer).addTo(mymap);
+		window.addEventListener('resize', () => {
+			mymap.invalidateSize();
+		});
 
-		// L.polygon(stateData, {
-		// 	onEachFeature: function (feature, layer) {
-		// 		layer.bindPopup(feature.properties.Area);
-		// 	}
-		// }).addTo(mymap);
+		// Initial call to fit the map in its container
+		// mymap.invalidateSize();
+		L.polygon(stateData[0], {
+			onEachFeature: function (feature, layer) {
+				layer.bindPopup(feature.properties.Area);
+			}
+		}).addTo(mymap);
 
-		// let polygon = L.polygon(coordinates[0], { color: polygonColour }).addTo(mymap);
-		// mymap.fitBounds(polygon.getBounds());
+		let polygon = L.polygon(coordinates[0], { color: polygonColour }).addTo(mymap);
+		mymap.fitBounds(polygon.getBounds());
 	});
 	function getCurrentLocation() {
 		navigator.geolocation.getCurrentPosition(
@@ -115,7 +135,7 @@
 </script>
 
 <!-- h-[702px] w-[1535px] -->
-<div id="mymaps" class="h-[702px] w-[1535px] scale-125"></div>
+<div bind:this={mapCon} class="h-[702px] w-[1535px] border-2 border-black"></div>
 <button class="absolute bottom-10 right-10 z-[500] w-fit" on:click={getCurrentLocation}>
 	<LocateFixed size="48px" />
 </button>

@@ -18,7 +18,8 @@ export const load: PageLoad = async ({ url }) => {
 		}
 	);
 	const predictedData = await response.json();
-	let swappedCoordinates = [];
+	let swappedArea = [];
+	let swappedState = [];
 	const resp = await fetch(`https://nirbhicapi.netlify.app/?lat=${lat}&lon=${lon}`);
 
 	const coordinates = await resp.json();
@@ -31,15 +32,29 @@ export const load: PageLoad = async ({ url }) => {
 	}
 	const { currentArea, currentState } = coordinates;
 	for (let i = 0; i < currentArea[0].length; i++) {
-		swappedCoordinates = currentArea[0].map(([lat, lon]) => [lon, lat]);
+		swappedArea = currentArea[0].map(([lat, lon]) => [lon, lat]);
 	}
-	console.log(currentArea);
+	// for (let i = 0; i < currentState.length; i++) {
+	// 	k = 0;
+	// 	for (let j = 0; j < currentState[i][j].length; j++) {
+	// 		var k = 0;
+	// 		swappedState = currentState[i][j][k].map(([lat, lon]) => [lon, lat]);
+	// 		k++;
+	// 	}
+	// }
+	swappedState = currentState.map((innerArray) =>
+		innerArray.map((dinner) => dinner.map(([lat, lon]) => [lon, lat]))
+	);
+	console.log(currentState[0][0]);
+	console.log('==================================================================');
 
-	console.log(predictedData);
+	console.log(swappedState[0][0]);
+
+	// console.log(predictedData);
 
 	return {
-		stateData: currentState,
-		coordata: [swappedCoordinates],
+		stateData: [swappedState],
+		coordata: [swappedArea],
 		predictedData: predictedData
 	};
 };
