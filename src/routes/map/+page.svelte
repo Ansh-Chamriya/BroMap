@@ -5,12 +5,13 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { LocateFixed } from 'lucide-svelte';
+	import 'leaflet-routing-machine';
 	import 'leaflet/dist/leaflet.css';
+	import * as Dialog from '$lib/components/ui/dialog';
 	const stateData = data.stateData;
 	const coordinates = data.coordata;
 	const safeScore = data.predictedData['Safe/Unsafe'];
-	console.log(stateData);
-	console.log(coordinates);
+	let affectedArea: object;
 
 	let mapCon;
 	let polygonColour = '#e08cf5';
@@ -73,6 +74,7 @@
 				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 		})
 	};
+	let routeCoordinates;
 
 	onMount(() => {
 		mymap = L.map(mapCon).setView(latlng, 13);
@@ -93,6 +95,9 @@
 		// });
 		mycustomLayer['googleStreets'].addTo(mymap);
 		L.control.layers(mycustomLayer).addTo(mymap);
+		// L.Routing.control({
+		// 	waypoints: [L.latLng(21.171814, 72.817699), L.latLng(22.294280813251934, 73.22856227091182)]
+		// }).addTo(mymap);
 		window.addEventListener('resize', () => {
 			mymap.invalidateSize();
 		});
@@ -104,24 +109,55 @@
 				layer.bindPopup(feature.properties.Area);
 			}
 		}).addTo(mymap);
-
 		let polygon = L.polygon(coordinates[0], { color: polygonColour }).addTo(mymap);
 		mymap.fitBounds(polygon.getBounds());
+		mymap.on('click', function (e) {
+			L.Routing.control({
+				waypoints: [L.latLng(21.17, 72.81), L.latLng(e.latlng.lat, e.latlng.lng)],
+				routeWhileDragging: true
+			})
+				.on('routesfound', async (e) => {
+					console.log(e.routes[0].coordinates);
+					routeCoordinates = e.routes[0].coordinates;
+					console.log(routeCoordinates[0].lat);
+					const response = await fetch('/map', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							coord: routeCoordinates
+						})
+					});
+					affectedArea = await response.json();
+					console.log(affectedArea);
+				})
+				.addTo(mymap);
+		});
 	});
+
+	let circle;
+	let marker;
 	function getCurrentLocation() {
-		navigator.geolocation.getCurrentPosition(
+		navigator.geolocation.watchPosition(
 			(location) => {
 				latlng = new L.latLng(location.coords.latitude, location.coords.longitude);
 				// ADD FLY IF YOU LOCATION IS DETECT
+				console.log('acc', location.coords.accuracy);
+
 				mymap.flyTo(latlng, 15, {
 					animate: true,
 					duration: 1
 				});
 				// CREATE RADIUS CIRCLE ON MARKER
-				L.circle(latlng, { radius: 300 }).addTo(mymap);
-
-				// CREATE MARKER YOU LOCATION
-				L.marker(latlng)
+				if (circle) {
+					mymap.removeLayer(circle);
+				}
+				if (marker) {
+					mymap.removeLayer(marker);
+				}
+				circle = L.circle(latlng, { radius: 300 }).addTo(mymap);
+				marker = L.marker(latlng)
 					.addTo(mymap)
 					.bindPopup(`You are here Safety Score ${safeScore}`)
 					.openPopup();
@@ -136,6 +172,20 @@
 
 <!-- h-[702px] w-[1535px] -->
 <div bind:this={mapCon} class="h-[702px] w-[1535px] border-2 border-black"></div>
+<div class="absolute left-0 top-0 z-[1000]">
+	<Dialog.Root>
+		<Dialog.Trigger>Open</Dialog.Trigger>
+		<Dialog.Content>
+			<Dialog.Header>
+				<Dialog.Description>
+					{affectedArea['PINCODE'].map((area) => {
+						return { area };
+					})}
+				</Dialog.Description>
+			</Dialog.Header>
+		</Dialog.Content>
+	</Dialog.Root>
+</div>
 <button class="absolute bottom-10 right-10 z-[500] w-fit" on:click={getCurrentLocation}>
 	<LocateFixed size="48px" />
 </button>
